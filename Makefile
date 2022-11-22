@@ -6,6 +6,13 @@ GO111MODULE = on
 
 REMOTE = kovetskiy
 
+privatebuild:
+	@echo :: building go binary $(VERSION)
+	CGO_ENABLED=0 go build \
+		-ldflags "-X main.version=$(VERSION)" \
+		-gcflags "-trimpath $(GOPATH)/src" \
+		-o ~/.bin/mark
+
 version:
 	@echo $(VERSION)
 

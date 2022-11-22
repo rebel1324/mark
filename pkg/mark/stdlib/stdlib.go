@@ -1,6 +1,10 @@
 package stdlib
 
 import (
+	"encoding/json"
+	"gopkg.in/yaml.v3"
+	"os"
+	"path"
 	"strings"
 	"text/template"
 
@@ -59,6 +63,18 @@ func macros(templates *template.Template) ([]macro.Macro, error) {
 	return macros, nil
 }
 
+func readFile(name string) ([]byte, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	filepath := path.Join(wd, name)
+	log.Info(filepath)
+	content, err := os.ReadFile(filepath)
+
+	return content, err
+}
+
 func templates(api *confluence.API) (*template.Template, error) {
 	text := func(line ...string) string {
 		return strings.Join(line, ``)
@@ -66,6 +82,48 @@ func templates(api *confluence.API) (*template.Template, error) {
 
 	templates := template.New(`stdlib`).Funcs(
 		template.FuncMap{
+			"yaml": func(name string) map[string]interface{} {
+				content, err := readFile(name)
+				if err != nil {
+					log.Fatal(err)
+				}
+				var output map[string]interface{}
+				err = yaml.Unmarshal(content, &output)
+				if err != nil {
+					log.Error(err)
+				}
+				return output
+			},
+
+			"json": func(name string) map[string]interface{} {
+				content, err := readFile(name)
+				if err != nil {
+					log.Fatal(err)
+				}
+				var output map[string]interface{}
+				err = json.Unmarshal(content, &output)
+				if err != nil {
+					log.Error(err)
+				}
+				return output
+			},
+
+			"plaintext": func(name string) string {
+				content, err := readFile(name)
+				if err != nil {
+					log.Fatal(err)
+				}
+				return string(content)
+			},
+
+			"dumpjson": func(anything map[string]interface{}) string {
+				output, err := json.MarshalIndent(anything, "", "    ")
+				if err != nil {
+					log.Fatal(err)
+				}
+				return string(output)
+			},
+
 			"user": func(name string) *confluence.User {
 				user, err := api.GetUserByName(name)
 				if err != nil {
